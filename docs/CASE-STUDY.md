@@ -1,6 +1,6 @@
 # Yadegar — an AI journaling companion that knows when to stay silent
 
-**A solo-built, production LLM product · Staff AI PM case study**
+**A solo-built, production LLM product — engine, eval harness, safety guardrails, and business model.**
 
 > Live at **yadegarjournal.com** (web) and on the **iOS App Store**. A contemplative
 > journaling companion that reads years of your private entries and surfaces *one*
@@ -129,7 +129,7 @@ The monetization is drawn from one principle: **charge only for the one action w
 
 ---
 
-## 7. What this demonstrates (for a Staff AI PM)
+ ## 7. What this demonstrates
 
 - **0→1 product judgment under deep ambiguity** — defining success as *recognition, not engagement*, and holding that line against every default of the category.
 - **AI system design with safety as a first-class constraint** — layered guardrails, fail-direction chosen per risk, and a scorer deliberately kept blind to personalization to protect its calibration.
