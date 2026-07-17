@@ -1,0 +1,55 @@
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 8099
+externalPort = 8099
+
+[[ports]]
+localPort = 23569
+externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+APP_URL = "https://yadegarjournal.com"
+NODE_ENV = "production"
+EMAIL_FROM = "Yadegar <hello@yadegarjournal.com>"
+SUPPORT_EMAIL = "hello@yadegarjournal.com"
+
+[userenv.development]
+ASYNC_MEMORY = "on"
+
+[userenv.production]
+WHY_TODAY_TIEBREAK = "on"
+SOFT_AFFINITY = "on"
+ASYNC_MEMORY = "on"
+
+[nix]
+channel = "stable-25_05"

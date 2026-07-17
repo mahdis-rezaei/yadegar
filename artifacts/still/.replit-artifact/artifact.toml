@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Still"
+version = "1.0.0"
+id = "artifacts/still"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23569
+
+[services.development]
+run = "pnpm --filter @workspace/still run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/still", "run", "build" ]
+publicDir = "artifacts/still/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23569"
+BASE_PATH = "/"

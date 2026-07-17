@@ -1,0 +1,2248 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: still
+    description: Still journaling companion
+  - name: entries
+    description: Journal entries
+  - name: memories
+    description: Returned memories
+  - name: imports
+    description: Importing historical journals
+  - name: reflections
+    description: Reflections written across time
+  - name: notifications
+    description: Nudge preferences
+  - name: privacy
+    description: Data export and account deletion
+  - name: auth
+    description: Authentication and accounts
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /still/extract:
+    post:
+      operationId: extractCandidates
+      tags: [still]
+      summary: Extract remembrance candidates from journal entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtractInput"
+      responses:
+        "200":
+          description: Extracted candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /still/score:
+    post:
+      operationId: scoreCandidates
+      tags: [still]
+      summary: Score candidates and select the one thing worth returning to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreInput"
+      responses:
+        "200":
+          description: Scored result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /entries:
+    get:
+      operationId: listEntries
+      tags: [entries]
+      summary: List the current user's journal entries
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: favorite
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The user's entries, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createEntry
+      tags: [entries]
+      summary: Create a journal entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryInput"
+      responses:
+        "201":
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /entries/samples:
+    post:
+      operationId: seedSampleEntries
+      tags: [entries]
+      summary: Add a small set of sample pages (idempotent) for first-run exploration
+      responses:
+        "200":
+          description: The user's sample entries (existing or newly seeded)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: clearSampleEntries
+      tags: [entries]
+      summary: Remove the current user's sample pages
+      responses:
+        "204":
+          description: Removed
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /entries/bulk-delete:
+    post:
+      operationId: bulkDeleteEntries
+      tags: [entries]
+      summary: Soft-delete several of the current user's entries by id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteInput"
+      responses:
+        "200":
+          description: How many entries were removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deletedCount:
+                    type: integer
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /entries/{id}:
+    get:
+      operationId: getEntry
+      tags: [entries]
+      summary: Fetch a single entry by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateEntry
+      tags: [entries]
+      summary: Update an entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryUpdate"
+      responses:
+        "200":
+          description: The updated entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteEntry
+      tags: [entries]
+      summary: Delete an entry (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /imports/paste:
+    post:
+      operationId: importPaste
+      tags: [imports]
+      summary: Parse pasted journal text into reviewable entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportPasteInput"
+      responses:
+        "200":
+          description: The import session with parsed entries to review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReview"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /imports/file:
+    post:
+      operationId: importFile
+      tags: [imports]
+      summary: Parse an uploaded .txt/.md file's text into reviewable entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFileInput"
+      responses:
+        "200":
+          description: The import session with parsed entries to review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReview"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /imports/{id}/review:
+    get:
+      operationId: getImportReview
+      tags: [imports]
+      summary: Get an import session and its parsed entries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The import review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReview"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /imports/{id}/parsed/{parsedEntryId}:
+    patch:
+      operationId: updateParsedEntry
+      tags: [imports]
+      summary: Edit a parsed entry before import (date, body, title, include)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: parsedEntryId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParsedEntryUpdate"
+      responses:
+        "200":
+          description: The updated parsed entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /imports/{id}/confirm:
+    post:
+      operationId: confirmImport
+      tags: [imports]
+      summary: Create journal entries from the included parsed entries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Import confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportConfirmResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /entries/{id}/reflections:
+    get:
+      operationId: listReflections
+      tags: [reflections]
+      summary: List reflections written on an entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reflections, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reflection"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createReflection
+      tags: [reflections]
+      summary: Write a reflection on an entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReflectionInput"
+      responses:
+        "201":
+          description: The created reflection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reflection"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /reflections/{id}:
+    patch:
+      operationId: updateReflection
+      tags: [reflections]
+      summary: Edit a reflection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReflectionUpdate"
+      responses:
+        "200":
+          description: The updated reflection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reflection"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteReflection
+      tags: [reflections]
+      summary: Delete a reflection (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: Get the current user's nudge preferences
+      responses:
+        "200":
+          description: The preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateNotifications
+      tags: [notifications]
+      summary: Update the current user's nudge preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationUpdate"
+      responses:
+        "200":
+          description: The updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memories/run:
+    post:
+      operationId: runMemory
+      tags: [memories]
+      summary: Run the engine over eligible entries and surface one thing (or stay quiet)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryRunInput"
+      responses:
+        "200":
+          description: A surfaced memory, honest silence, or a support response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryRunResult"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [memories]
+      summary: List the user's returned memories
+      responses:
+        "200":
+          description: Returned memories, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReturnedMemory"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memories/on-this-day:
+    get:
+      operationId: getOnThisDay
+      tags: [memories]
+      summary: Date-based returns — pages from this calendar day (±3 days) in prior years
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Target date (YYYY-MM-DD); defaults to the server's today.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eligible past pages, most recent year first (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OnThisDayMemory"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memories/look-back:
+    get:
+      operationId: getLookBack
+      tags: [memories]
+      summary: The date-based browse — on this day, around this time, and treasured pages
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Target date (YYYY-MM-DD); defaults to the server's today.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Date-based memories grouped by kind (any bucket may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LookBack"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /memories/{id}:
+    get:
+      operationId: getMemory
+      tags: [memories]
+      summary: Fetch a returned memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnedMemory"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateMemory
+      tags: [memories]
+      summary: Favorite, dismiss, or mark a memory opened
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryUpdate"
+      responses:
+        "200":
+          description: The updated memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnedMemory"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /continuity:
+    get:
+      operationId: getContinuity
+      tags: [memories]
+      summary: Archival continuity metrics (the anti-streak) + gentle milestones
+      responses:
+        "200":
+          description: Continuity metrics for the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Continuity"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /letters/{year}:
+    get:
+      operationId: getYearLetter
+      tags: [memories]
+      summary: "Your Year in Pages — a printable yearly artifact"
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The assembled year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YearLetter"
+        "400":
+          description: Invalid year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /shelf:
+    get:
+      operationId: listShelf
+      tags: [memories]
+      summary: The Memory Shelf — a small curated set of pages kept close
+      responses:
+        "200":
+          description: Shelf items, in shelf order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShelfItem"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: addToShelf
+      tags: [memories]
+      summary: Add a page to the shelf (idempotent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entryId:
+                  type: string
+              required:
+                - entryId
+      responses:
+        "201":
+          description: Added
+        "200":
+          description: Already on the shelf
+        "404":
+          description: Page not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /shelf/{entryId}:
+    delete:
+      operationId: removeFromShelf
+      tags: [memories]
+      summary: Take a page off the shelf
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+  /capsules:
+    get:
+      operationId: listCapsules
+      tags: [memories]
+      summary: The user's Memory Capsules (sealed until delivered)
+      responses:
+        "200":
+          description: Capsules, soonest delivery first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Capsule"
+    post:
+      operationId: createCapsule
+      tags: [memories]
+      summary: Seal a letter to a future self
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                deliverAt:
+                  type: string
+              required:
+                - body
+                - deliverAt
+      responses:
+        "201":
+          description: The sealed capsule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capsule"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /capsules/{id}:
+    patch:
+      operationId: openCapsule
+      tags: [memories]
+      summary: Mark a delivered capsule as opened
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                opened:
+                  type: boolean
+      responses:
+        "200":
+          description: The capsule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capsule"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /collections:
+    get:
+      operationId: listCollections
+      tags: [memories]
+      summary: The user's collections (with counts; optional per-entry membership)
+      parameters:
+        - name: entryId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CollectionSummary"
+    post:
+      operationId: createCollection
+      tags: [memories]
+      summary: Create a collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                kind:
+                  type: string
+              required: [name]
+      responses:
+        "201":
+          description: The created collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionSummary"
+  /collections/{id}:
+    get:
+      operationId: getCollection
+      tags: [memories]
+      summary: A collection with its pages, chronological
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCollection
+      tags: [memories]
+      summary: Delete a collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+  /collections/{id}/items:
+    post:
+      operationId: addCollectionItem
+      tags: [memories]
+      summary: Add a page to a collection (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entryId:
+                  type: string
+              required: [entryId]
+      responses:
+        "201":
+          description: Added
+  /collections/{id}/items/{entryId}:
+    delete:
+      operationId: removeCollectionItem
+      tags: [memories]
+      summary: Remove a page from a collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+  /preferences:
+    get:
+      operationId: getPreferences
+      tags: [memories]
+      summary: User-level preferences (memory sensitivity)
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+    patch:
+      operationId: updatePreferences
+      tags: [memories]
+      summary: Update memory sensitivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Preferences"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        "400":
+          description: Invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /resurface-mutes:
+    get:
+      operationId: listResurfaceMutes
+      tags: [memories]
+      summary: The user's muted date ranges (pages that won't resurface)
+      responses:
+        "200":
+          description: Muted periods, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResurfaceMute"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: addResurfaceMute
+      tags: [memories]
+      summary: Mute a date range so its pages never resurface
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResurfaceMuteInput"
+      responses:
+        "201":
+          description: The created mute
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResurfaceMute"
+        "400":
+          description: Invalid range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /resurface-mutes/{id}:
+    delete:
+      operationId: removeResurfaceMute
+      tags: [memories]
+      summary: Remove a mute (its pages can return again)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /privacy/export:
+    get:
+      operationId: exportData
+      tags: [privacy]
+      summary: Export all of the current user's data
+      responses:
+        "200":
+          description: Everything the user has written and been returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyExport"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /privacy/export/markdown:
+    get:
+      operationId: exportMarkdown
+      tags: [privacy]
+      summary: Export journals (+ reflections) as Markdown
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, favorites, year]
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A Markdown document
+          content:
+            text/markdown:
+              schema:
+                type: string
+  /privacy/export/text:
+    get:
+      operationId: exportText
+      tags: [privacy]
+      summary: Export journals (+ reflections) as plain text
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, favorites, year]
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A plain-text document
+          content:
+            text/plain:
+              schema:
+                type: string
+  /privacy/account:
+    delete:
+      operationId: deleteAccount
+      tags: [privacy]
+      summary: Permanently delete the account and all associated data
+      responses:
+        "204":
+          description: Account and all data deleted
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Confirm an email address with a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "204":
+          description: Verified (or already verified)
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [auth]
+      summary: Resend the verification email to the current user
+      responses:
+        "204":
+          description: Sent (if not already verified)
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/request-password-reset:
+    post:
+      operationId: requestPasswordReset
+      tags: [auth]
+      summary: Request a password-reset email (always succeeds)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestResetInput"
+      responses:
+        "204":
+          description: If the email matches an account, a reset link was sent
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Set a new password using a reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "204":
+          description: Password updated
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Create an account with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Account created and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out of the current session
+      responses:
+        "204":
+          description: Signed out
+  /auth/complete-onboarding:
+    post:
+      operationId: completeOnboarding
+      tags: [auth]
+      summary: Mark the current user's onboarding as complete
+      responses:
+        "200":
+          description: The updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: The current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        avatarColor:
+          type: ["string", "null"]
+        hasPassword:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+        emailVerified:
+          type: boolean
+        plan:
+          type: string
+          enum: [free, member]
+        planRenewsAt:
+          type: ["string", "null"]
+          format: date-time
+        usage:
+          type: object
+          properties:
+            used:
+              type: integer
+            limit:
+              type: ["integer", "null"]
+            atLimit:
+              type: boolean
+            enforced:
+              type: boolean
+          required:
+            - used
+            - limit
+            - atLimit
+        token:
+          type: string
+      required:
+        - id
+        - email
+        - onboardingCompleted
+        - emailVerified
+    VerifyEmailInput:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+      required:
+        - token
+    RequestResetInput:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 3
+      required:
+        - email
+    ResetPasswordInput:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+      required:
+        - token
+        - password
+    RegisterInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+      required:
+        - email
+        - password
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 1
+      required:
+        - email
+        - password
+    Entry:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: ["string", "null"]
+        body:
+          type: string
+        bodyRich:
+          type: ["string", "null"]
+          description: >-
+            Sanitized HTML rich-text layer (bold, italic, headings, lists,
+            blockquote, muted text colors). NULL for a plain entry. `body` is the
+            canonical plain text derived from this.
+        entryDate:
+          type: ["string", "null"]
+        source:
+          type: string
+          enum: [manual, pasted_import, file_import, google_doc, sample]
+        favorite:
+          type: boolean
+        resurfacingPreference:
+          type: string
+          enum: [normal, more_often, never]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - body
+        - source
+        - favorite
+        - resurfacingPreference
+        - createdAt
+        - updatedAt
+    EntryInput:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+          minLength: 1
+        bodyRich:
+          type: string
+          description: >-
+            Optional rich-text HTML. When present, the server sanitizes it and
+            derives `body` (plain text) from it.
+        entryDate:
+          type: string
+      required:
+        - body
+    BulkDeleteInput:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+      required:
+        - ids
+    EntryUpdate:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        body:
+          type: string
+          minLength: 1
+        bodyRich:
+          type: ["string", "null"]
+          description: >-
+            Rich-text HTML. Non-empty → sanitized and `body` re-derived from it;
+            null/empty → clears formatting and keeps the plain `body`.
+        entryDate:
+          type: ["string", "null"]
+        favorite:
+          type: boolean
+        resurfacingPreference:
+          type: string
+          enum: [normal, more_often, never]
+    PrivacyExport:
+      type: object
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        account:
+          type: object
+          properties:
+            email:
+              type: string
+            name:
+              type: ["string", "null"]
+            createdAt:
+              type: string
+              format: date-time
+          required:
+            - email
+            - createdAt
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Entry"
+        reflections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reflection"
+        memories:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReturnedMemory"
+      required:
+        - exportedAt
+        - account
+        - entries
+        - reflections
+        - memories
+    Reflection:
+      type: object
+      properties:
+        id:
+          type: string
+        journalEntryId:
+          type: string
+        body:
+          type: string
+        reflectionDate:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - journalEntryId
+        - body
+        - createdAt
+        - updatedAt
+    ReflectionInput:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+      required:
+        - body
+    ReflectionUpdate:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+      required:
+        - body
+    ParsedEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        detectedDate:
+          type: ["string", "null"]
+        dateConfidence:
+          type: string
+          enum: [high, medium, low, unknown]
+        body:
+          type: string
+        title:
+          type: ["string", "null"]
+        include:
+          type: boolean
+        orderIndex:
+          type: ["integer", "null"]
+      required:
+        - id
+        - dateConfidence
+        - body
+        - include
+    ImportReview:
+      type: object
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+        parsedCount:
+          type: integer
+        importedCount:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedEntry"
+      required:
+        - id
+        - source
+        - status
+        - parsedCount
+        - importedCount
+        - entries
+    ImportPasteInput:
+      type: object
+      properties:
+        rawText:
+          type: string
+          minLength: 1
+      required:
+        - rawText
+    ImportFileInput:
+      type: object
+      properties:
+        filename:
+          type: string
+        rawText:
+          type: string
+          minLength: 1
+      required:
+        - filename
+        - rawText
+    ParsedEntryUpdate:
+      type: object
+      properties:
+        detectedDate:
+          type: ["string", "null"]
+        body:
+          type: string
+        title:
+          type: ["string", "null"]
+        include:
+          type: boolean
+    ImportConfirmResult:
+      type: object
+      properties:
+        importedCount:
+          type: integer
+      required:
+        - importedCount
+    NotificationPreferences:
+      type: object
+      properties:
+        writingFrequency:
+          type: string
+          enum: [off, weekly, monthly]
+        memoryFrequency:
+          type: string
+          enum: [off, weekly, monthly]
+      required:
+        - writingFrequency
+        - memoryFrequency
+    NotificationUpdate:
+      type: object
+      properties:
+        writingFrequency:
+          type: string
+          enum: [off, weekly, monthly]
+        memoryFrequency:
+          type: string
+          enum: [off, weekly, monthly]
+    ReturnedMemory:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: ["string", "null"]
+        observation:
+          type: ["string", "null"]
+        quote:
+          type: ["string", "null"]
+        quoteDate:
+          type: ["string", "null"]
+        lens:
+          type: ["string", "null"]
+        journalEntryId:
+          type: ["string", "null"]
+        dismissed:
+          type: boolean
+        favorite:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        openedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - dismissed
+        - favorite
+        - createdAt
+    OnThisDayMemory:
+      type: object
+      properties:
+        entryId:
+          type: string
+        title:
+          type: ["string", "null"]
+        excerpt:
+          type: string
+        entryDate:
+          type: string
+        favorite:
+          type: boolean
+        yearsAgo:
+          type: integer
+        onThisExactDay:
+          type: boolean
+      required:
+        - entryId
+        - excerpt
+        - entryDate
+        - favorite
+        - yearsAgo
+        - onThisExactDay
+    DateMemory:
+      type: object
+      properties:
+        entryId:
+          type: string
+        title:
+          type: ["string", "null"]
+        excerpt:
+          type: string
+        entryDate:
+          type: string
+        favorite:
+          type: boolean
+        yearsAgo:
+          type: integer
+      required:
+        - entryId
+        - excerpt
+        - entryDate
+        - favorite
+        - yearsAgo
+    LookBack:
+      type: object
+      properties:
+        onThisDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnThisDayMemory"
+        aroundThisTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/DateMemory"
+        favorites:
+          type: array
+          items:
+            $ref: "#/components/schemas/DateMemory"
+        forgotten:
+          type: array
+          items:
+            $ref: "#/components/schemas/DateMemory"
+      required:
+        - onThisDay
+        - aroundThisTime
+        - favorites
+        - forgotten
+    ResurfaceMute:
+      type: object
+      properties:
+        id:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - startDate
+        - endDate
+        - createdAt
+    ResurfaceMuteInput:
+      type: object
+      properties:
+        startDate:
+          type: string
+        endDate:
+          type: string
+      required:
+        - startDate
+        - endDate
+    Continuity:
+      type: object
+      properties:
+        pageCount:
+          type: integer
+        writingSinceYear:
+          type: ["integer", "null"]
+        spanYears:
+          type: ["integer", "null"]
+        oldestPageAgeYears:
+          type: ["integer", "null"]
+        reflectionCount:
+          type: integer
+        oldestImportedAgeYears:
+          type: ["integer", "null"]
+        wroteFirstReflectionToday:
+          type: boolean
+      required:
+        - pageCount
+        - reflectionCount
+        - wroteFirstReflectionToday
+    LetterFavorite:
+      type: object
+      properties:
+        entryId:
+          type: string
+        title:
+          type: ["string", "null"]
+        excerpt:
+          type: string
+        entryDate:
+          type: ["string", "null"]
+      required:
+        - entryId
+        - excerpt
+    YearLetter:
+      type: object
+      properties:
+        year:
+          type: integer
+        pageCount:
+          type: integer
+        reflectionCount:
+          type: integer
+        favorites:
+          type: array
+          items:
+            $ref: "#/components/schemas/LetterFavorite"
+      required:
+        - year
+        - pageCount
+        - reflectionCount
+        - favorites
+    ShelfItem:
+      type: object
+      properties:
+        entryId:
+          type: string
+        title:
+          type: ["string", "null"]
+        excerpt:
+          type: string
+        entryDate:
+          type: ["string", "null"]
+        favorite:
+          type: boolean
+      required:
+        - entryId
+        - excerpt
+        - favorite
+    Capsule:
+      type: object
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        deliverAt:
+          type: string
+          format: date-time
+        delivered:
+          type: boolean
+        openedAt:
+          type: ["string", "null"]
+        body:
+          type: ["string", "null"]
+      required:
+        - id
+        - createdAt
+        - deliverAt
+        - delivered
+    Preferences:
+      type: object
+      properties:
+        memorySensitivity:
+          type: string
+          enum: [open, gentle, protected]
+      required:
+        - memorySensitivity
+    CollectionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        itemCount:
+          type: integer
+        containsEntry:
+          type: boolean
+      required:
+        - id
+        - name
+        - kind
+        - itemCount
+        - containsEntry
+    CollectionItem:
+      type: object
+      properties:
+        entryId:
+          type: string
+        title:
+          type: ["string", "null"]
+        excerpt:
+          type: string
+        entryDate:
+          type: ["string", "null"]
+      required:
+        - entryId
+        - excerpt
+    CollectionDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionItem"
+      required:
+        - id
+        - name
+        - kind
+        - items
+    MemoryRunInput:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        entryIds:
+          type: array
+          items:
+            type: string
+        fresh:
+          type: boolean
+    MemoryRunResult:
+      type: object
+      properties:
+        surfaced:
+          type: boolean
+        reason:
+          type: ["string", "null"]
+        supportMessage:
+          type: ["string", "null"]
+        memory:
+          $ref: "#/components/schemas/ReturnedMemory"
+      required:
+        - surfaced
+    MemoryUpdate:
+      type: object
+      properties:
+        favorite:
+          type: boolean
+        dismissed:
+          type: boolean
+        opened:
+          type: boolean
+    Quote:
+      type: object
+      properties:
+        date:
+          type: string
+        fragment:
+          type: string
+        source_type:
+          type: string
+          enum: [journal, saved_quote, copied_text, unknown]
+      required:
+        - date
+        - fragment
+        - source_type
+    Candidate:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [thread, memory, distance, value_signal, wisdom]
+        candidate_title:
+          type: string
+        function:
+          type: string
+        description:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quote"
+        why_it_matters:
+          type: string
+      required:
+        - mode
+        - function
+        - description
+        - evidence
+        - why_it_matters
+    ExtractInput:
+      type: object
+      properties:
+        entries:
+          type: string
+      required:
+        - entries
+    ExtractResult:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candidate"
+      required:
+        - candidates
+    CandidateScore:
+      type: object
+      properties:
+        mode:
+          type: string
+        candidate_title:
+          type: string
+        safety:
+          type: number
+        worth_returning_to:
+          type: number
+        recognition:
+          type: number
+        specificity:
+          type: number
+        persistence:
+          type: ["number", "null"]
+        same_function_different_language:
+          type: ["number", "null"]
+        vividness:
+          type: ["number", "null"]
+        revealing:
+          type: ["number", "null"]
+        contrast:
+          type: ["number", "null"]
+        evidence_across_time:
+          type: ["number", "null"]
+        meaningfulness_of_selection:
+          type: ["number", "null"]
+        attribution_confidence:
+          type: ["number", "null"]
+        clarity:
+          type: ["number", "null"]
+        earnedness:
+          type: ["number", "null"]
+        surfaceable:
+          type: boolean
+        why:
+          type: string
+      required:
+        - mode
+        - safety
+        - worth_returning_to
+        - recognition
+        - specificity
+        - surfaceable
+        - why
+    ScoreInput:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candidate"
+      required:
+        - candidates
+    ScoreResult:
+      type: object
+      properties:
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateScore"
+        mode:
+          type: string
+          enum: [thread, memory, distance, value_signal, wisdom, nothing]
+        label:
+          type: ["string", "null"]
+        observation:
+          type: ["string", "null"]
+        quotes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quote"
+        why:
+          type: string
+        message:
+          type: ["string", "null"]
+      required:
+        - scores
+        - mode
+        - quotes
+        - why

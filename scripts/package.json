@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "eval": "tsx ./src/eval/run.ts",
+    "eval:floor": "tsx ./src/eval/classify-floor.ts",
+    "test:engine": "tsx --test \"../artifacts/api-server/src/lib/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:"
+  }
+}

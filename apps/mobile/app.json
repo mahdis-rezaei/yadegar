@@ -1,0 +1,94 @@
+{
+  "expo": {
+    "name": "Yadegar",
+    "slug": "yadegar",
+    "scheme": "yadegar",
+    "version": "1.0.3",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F1E6"
+    },
+    "ios": {
+      "bundleIdentifier": "com.yadegar.app",
+      "buildNumber": "22",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.yadegar.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F1EAD7"
+      },
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-asset",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Yadegar to use Face ID to keep your journal private."
+        }
+      ],
+      "expo-apple-authentication",
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Yadegar to add photos to your pages.",
+          "cameraPermission": "Allow Yadegar to take a photo for your page."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Yadegar to use the microphone to dictate your writing.",
+          "speechRecognitionPermission": "Allow Yadegar to transcribe your speech into text."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Fraunces-SemiBold.ttf",
+            "./assets/fonts/Newsreader-Regular.ttf",
+            "./assets/fonts/Newsreader-Italic.ttf",
+            "./assets/fonts/Newsreader-Medium.ttf",
+            "./assets/fonts/Newsreader-SemiBold.ttf",
+            "./assets/fonts/Inter-Regular.ttf",
+            "./assets/fonts/Inter-SemiBold.ttf"
+          ]
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "713e75e4-8c5c-46cf-9b40-de16938bea8a"
+      }
+    },
+    "owner": "mahdis-rezaei"
+  }
+}

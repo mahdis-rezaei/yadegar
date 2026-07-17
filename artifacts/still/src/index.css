@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@theme inline {
+  --color-background: #F7F1E6;
+  --color-surface: #FFFDF8;
+  --color-ink: #25211C;
+  --color-soft-ink: #6F675C;
+  --color-faint-ink: #A59B8D;
+  --color-border: #DED3C3;
+  --color-accent-sepia: #8A6F4D;
+  --color-deep-brown: #3A2F25;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Newsreader', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.3;
+}
+
+/* A soft, warm ambient field — slow-breathing color washes behind the page.
+   Calm by design: low opacity, heavy blur, a very slow drift. */
+.ambient-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--color-background);
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform, opacity;
+  animation: ambient-drift 22s ease-in-out infinite;
+}
+
+@keyframes ambient-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(2%, -2%) scale(1.08);
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob {
+    animation: none;
+  }
+}
+
+/* Shared rendering for the literary rich-text layer — used both by the
+   contentEditable composer (.rich-editor) and the read view. Tuned to the warm,
+   quiet paper aesthetic: serif headings, a sepia quote rule, restrained spacing.
+   Tailwind's base resets headings/lists, so these styles re-establish them only
+   inside .rich-content. */
+.rich-content :where(h2) {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  color: var(--color-deep-brown);
+  margin: 1.1em 0 0.35em;
+}
+.rich-content :where(h3) {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.2rem;
+  line-height: 1.35;
+  color: var(--color-deep-brown);
+  margin: 1em 0 0.3em;
+}
+.rich-content :where(p) {
+  margin: 0 0 0.7em;
+}
+.rich-content :where(ul) {
+  list-style: disc;
+  padding-left: 1.4em;
+  margin: 0 0 0.7em;
+}
+.rich-content :where(ol) {
+  list-style: decimal;
+  padding-left: 1.5em;
+  margin: 0 0 0.7em;
+}
+.rich-content :where(li) {
+  margin: 0.15em 0;
+}
+.rich-content :where(blockquote) {
+  border-left: 2px solid color-mix(in srgb, var(--color-accent-sepia) 60%, transparent);
+  padding-left: 1em;
+  margin: 0.7em 0;
+  color: var(--color-soft-ink);
+  font-style: italic;
+}
+.rich-content :where(strong, b) {
+  font-weight: 600;
+}
+.rich-content :where(em, i) {
+  font-style: italic;
+}
+.rich-content :where(u) {
+  text-decoration: underline;
+}
+.rich-content :where(:first-child) {
+  margin-top: 0;
+}
+
+/* Placeholder for the empty composer. We toggle data-empty in JS (a stray <br>
+   left after clearing means :empty alone isn't reliable). */
+.rich-editor:focus {
+  outline: none;
+}
+.rich-editor[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  color: color-mix(in srgb, var(--color-faint-ink) 90%, transparent);
+  pointer-events: none;
+}
